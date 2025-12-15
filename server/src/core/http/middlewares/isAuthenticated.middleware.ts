@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  ForbiddenException,
   Injectable,
   NestMiddleware,
 } from '@nestjs/common';
@@ -17,6 +18,18 @@ export class IsAuthenticatedMiddlware implements NestMiddleware {
     if (!authHeader) {
       throw new BadGatewayException('Authentication Header não informado');
     }
-    
+    const [_, token] = authHeader.split(' ');
+    if (!token) {
+      throw new BadGatewayException('TOken Header não informado');
+    }
+    try {
+      const tokenData = this.jwt.verify(token) as {
+        sub: number;
+      };
+      req.headers['intern-user'] = String(tokenData.sub);
+      next();
+    } catch (error) {
+      throw new ForbiddenException('token inválido ou expirado');
+    }
   }
 }
